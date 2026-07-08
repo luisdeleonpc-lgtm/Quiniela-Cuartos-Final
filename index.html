@@ -453,6 +453,12 @@ const TEAM_COLORS = {
   "Noruega":"#BA0C2F", "Inglaterra":"#1E3A8A",
   "Argentina":"#75AADB", "Suiza":"#DA291C",
 };
+const TEAM_FLAGS = {
+  "Francia":"🇫🇷", "Marruecos":"🇲🇦",
+  "España":"🇪🇸", "Bélgica":"🇧🇪",
+  "Noruega":"🇳🇴", "Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "Argentina":"🇦🇷", "Suiza":"🇨🇭",
+};
 const SEED_MATCHES = {
   m1: { teamA:"Francia",   teamB:"Marruecos",  kickoff:"2026-07-09T14:00:00", label:"9 jul · 2:00 p.m.", phase:"Cuartos de Final", fecha:"9 Julio", hora:"2:00 p.m.", venue:"Estadio Boston" },
   m2: { teamA:"España",    teamB:"Bélgica",    kickoff:"2026-07-10T13:00:00", label:"10 jul · 1:00 p.m.", phase:"Cuartos de Final", fecha:"10 Julio", hora:"1:00 p.m.", venue:"Estadio Los Ángeles" },
@@ -529,7 +535,8 @@ function genPassword(){
   return out;
 }
 function isLocked(match){
-  return new Date() >= new Date(match.kickoff);
+  const lockAt = new Date(match.kickoff).getTime() - 5*60*1000;
+  return Date.now() >= lockAt;
 }
 function fmtScore(s){
   if(s==null || s.a===undefined || s.a===null || s.a==="" ) return null;
@@ -707,6 +714,8 @@ function openRulesModal(){
    TOP BAR (compartido)
    ====================================================================== */
 function topBar(activeTab, tabs){
+  const me = USERS[CURRENT_USER.username] || {};
+  const flag = (CURRENT_USER.role==="player" && me.favoriteTeam) ? TEAM_FLAGS[me.favoriteTeam]+" " : "";
   return `
     <div class="floodbar"></div>
     <header class="top">
@@ -715,7 +724,7 @@ function topBar(activeTab, tabs){
         <h1>Quiniela <span>· Eliminación Directa</span></h1>
       </div>
       <div class="who">
-        <span>Hola, <b>${CURRENT_USER.name||CURRENT_USER.username}</b></span>
+        <span>Hola, <b>${flag}${CURRENT_USER.name||CURRENT_USER.username}</b></span>
         <button class="btn btn-ghost btn-sm" id="rules-btn">Reglas</button>
         <button class="btn btn-ghost btn-sm" id="logout-btn">Salir</button>
       </div>
@@ -730,20 +739,169 @@ function wireTopBar(){
 /* ======================================================================
    RENDER: PLAYER VIEW
    ====================================================================== */
+let playerTab = "predicciones";
 function renderPlayer(){
-  const matchIds = Object.keys(MATCHES).sort();
+  const me = USERS[CURRENT_USER.username] || {};
+  const needsProfile = !me.favoriteTeam;
+  if(needsProfile) playerTab = "configuracion";
+
+  const tabsHtml = needsProfile ? `
+    <div class="tabs">
+      <button class="tab active" data-tab="configuracion">Configuración</button>
+    </div>
+    <div class="panel" style="margin-bottom:20px;background:rgba(255,212,71,0.08);border-color:var(--gold);">
+      <b style="color:var(--gold);">¡Antes de continuar!</b>
+      <div class="breakdown" style="margin-top:6px;">Elige la bandera de tu equipo favorito para poder ver y guardar tus predicciones.</div>
+    </div>
+  ` : `
+    <div class="tabs">
+      <button class="tab ${playerTab==='predicciones'?'active':''}" data-tab="predicciones">Predicciones</button>
+      <button class="tab ${playerTab==='mis-pronosticos'?'active':''}" data-tab="mis-pronosticos">Mis Pronósticos</button>
+      <button class="tab ${playerTab==='configuracion'?'active':''}" data-tab="configuracion">Configuración</button>
+    </div>
+  `;
+
   root.innerHTML = `
     ${topBar()}
     <main>
-      <div class="section-title">Tus predicciones</div>
-      <div id="matches-list"></div>
+      ${tabsHtml}
+      <div id="player-content"></div>
     </main>
   `;
   wireTopBar();
-  const list = document.getElementById("matches-list");
-  matchIds.forEach(id=>{
-    list.appendChild(renderPlayerMatchCard(id, MATCHES[id]));
+
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.onclick = ()=>{
+      if(needsProfile) return;
+      playerTab = t.dataset.tab;
+      renderPlayer();
+    };
   });
+
+  const content = document.getElementById("player-content");
+  if(playerTab === "mis-pronosticos" && !needsProfile){
+    content.appendChild(renderMisPronosticosPanel());
+  } else if(playerTab === "configuracion"){
+    content.appendChild(renderConfigPanel(needsProfile));
+  } else {
+    content.innerHTML = `<div class="section-title">Tus predicciones</div><div id="matches-list"></div>`;
+    const list = document.getElementById("matches-list");
+    Object.keys(MATCHES).sort().forEach(id=>{
+      list.appendChild(renderPlayerMatchCard(id, MATCHES[id]));
+    });
+  }
+}
+
+function renderMisPronosticosPanel(){
+  const wrap = document.createElement("div");
+  const myPreds = PREDICTIONS[CURRENT_USER.username] || {};
+  const rows = Object.keys(MATCHES).sort().map(id=>{
+    const match = MATCHES[id];
+    const pred = myPreds[id];
+    const result = match.result;
+    const scoring = result ? computeMatchPoints(pred, result) : null;
+    return `
+      <tr>
+        <td>${match.teamA} vs ${match.teamB}</td>
+        <td class="cred">${pred && pred.reg ? fmtScore(pred.reg) : '—'}</td>
+        <td class="cred">${pred && pred.et ? fmtScore(pred.et) : '—'}</td>
+        <td class="cred">${pred && pred.pen ? fmtScore(pred.pen) : '—'}</td>
+        <td>${result ? `<span class="points-pill">${scoring.total} pts</span>` : `<span style="color:var(--muted);">Pendiente</span>`}</td>
+      </tr>
+    `;
+  }).join("");
+  wrap.innerHTML = `
+    <div class="panel">
+      <h3>Mis pronósticos</h3>
+      <table class="roster">
+        <thead><tr><th>Partido</th><th>90'</th><th>T. Extra</th><th>Penales</th><th>Puntos</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+  return wrap;
+}
+
+function renderConfigPanel(needsProfile){
+  const wrap = document.createElement("div");
+  const me = USERS[CURRENT_USER.username] || {};
+  const teams = Object.keys(TEAM_FLAGS);
+  let selectedTeam = me.favoriteTeam || null;
+
+  wrap.innerHTML = `
+    <div class="panel">
+      <h3>Tu equipo favorito ${needsProfile?'<span style="color:var(--red);font-size:12px;">(obligatorio)</span>':''}</h3>
+      <div class="breakdown" style="margin-bottom:14px;">Elige la bandera de tu equipo favorito — será tu foto de perfil dentro de la quiniela.</div>
+      <div id="flag-grid" style="display:flex;flex-wrap:wrap;gap:10px;">
+        ${teams.map(t=>`
+          <button type="button" class="flag-btn" data-team="${t}" title="${t}"
+            style="font-size:30px;width:60px;height:60px;border-radius:10px;
+            border:2px solid ${selectedTeam===t?'var(--gold)':'var(--line)'};
+            background:${selectedTeam===t?'rgba(255,212,71,0.12)':'var(--surface-2)'};">
+            ${TEAM_FLAGS[t]}
+          </button>
+        `).join("")}
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-gold btn-sm" id="save-flag">Guardar equipo favorito</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Cambiar contraseña</h3>
+      <div class="inline-form">
+        <div class="field">
+          <label>Nueva contraseña</label>
+          <input type="password" id="new-pass" placeholder="••••••">
+        </div>
+        <div class="field">
+          <label>Confirmar contraseña</label>
+          <input type="password" id="confirm-pass" placeholder="••••••">
+        </div>
+        <button class="btn btn-gold" id="save-pass">Actualizar contraseña</button>
+      </div>
+      <div id="pass-msg" style="font-size:13px;margin-top:8px;color:var(--muted);"></div>
+    </div>
+  `;
+
+  wrap.querySelectorAll(".flag-btn").forEach(btn=>{
+    btn.onclick = ()=>{
+      selectedTeam = btn.dataset.team;
+      wrap.querySelectorAll(".flag-btn").forEach(b=>{
+        const active = b.dataset.team===selectedTeam;
+        b.style.borderColor = active ? "var(--gold)" : "var(--line)";
+        b.style.background = active ? "rgba(255,212,71,0.12)" : "var(--surface-2)";
+      });
+    };
+  });
+
+  wrap.querySelector("#save-flag").onclick = ()=>{
+    if(!selectedTeam){ toast("Selecciona una bandera antes de guardar."); return; }
+    db.ref(`users/${CURRENT_USER.username}/favoriteTeam`).set(selectedTeam).then(()=>{
+      USERS[CURRENT_USER.username] = Object.assign({}, USERS[CURRENT_USER.username], {favoriteTeam:selectedTeam});
+      toast("Equipo favorito guardado.");
+      playerTab = "predicciones";
+      renderPlayer();
+    }).catch(err=>toast("Error: "+err.message));
+  };
+
+  wrap.querySelector("#save-pass").onclick = ()=>{
+    const p1 = wrap.querySelector("#new-pass").value.trim();
+    const p2 = wrap.querySelector("#confirm-pass").value.trim();
+    const msg = wrap.querySelector("#pass-msg");
+    if(!p1 || p1.length<4){ msg.textContent = "La contraseña debe tener al menos 4 caracteres."; msg.style.color="var(--red)"; return; }
+    if(p1!==p2){ msg.textContent = "Las contraseñas no coinciden."; msg.style.color="var(--red)"; return; }
+    db.ref(`users/${CURRENT_USER.username}/password`).set(p1).then(()=>{
+      msg.textContent = "Contraseña actualizada correctamente.";
+      msg.style.color="var(--green)";
+      wrap.querySelector("#new-pass").value="";
+      wrap.querySelector("#confirm-pass").value="";
+    }).catch(err=>{
+      msg.textContent = "Error: "+err.message;
+      msg.style.color="var(--red)";
+    });
+  };
+
+  return wrap;
 }
 
 function renderPlayerMatchCard(id, match){
@@ -858,7 +1016,7 @@ function renderPlayerMatchCard(id, match){
         <button class="btn btn-gold" id="${id}-save" ${locked?'disabled':''}>🛡️ Guardar Pronóstico</button>
       </div>
       <div class="save-row" style="margin-top:10px;">
-        <span class="save-hint">${locked? 'Predicciones cerradas: el partido ya inició.' : 'Puedes editar tu predicción hasta el inicio del partido.'}</span>
+        <span class="save-hint">${locked? 'Predicciones cerradas: faltan menos de 5 minutos para el inicio (o ya inició).' : 'Puedes editar tu predicción hasta 5 minutos antes del inicio del partido.'}</span>
       </div>
 
       ${result ? `
@@ -946,6 +1104,7 @@ function renderAdmin(){
       <div class="tabs">
         <button class="tab ${adminTab==='participants'?'active':''}" data-tab="participants">Participantes</button>
         <button class="tab ${adminTab==='matches'?'active':''}" data-tab="matches">Resultados</button>
+        <button class="tab ${adminTab==='predictions'?'active':''}" data-tab="predictions">Pronósticos</button>
         <button class="tab ${adminTab==='leaderboard'?'active':''}" data-tab="leaderboard">Tabla de posiciones</button>
       </div>
       <div id="admin-content"></div>
@@ -958,7 +1117,41 @@ function renderAdmin(){
   const content = document.getElementById("admin-content");
   if(adminTab==="participants") content.appendChild(renderParticipantsPanel());
   if(adminTab==="matches") content.appendChild(renderMatchesPanel());
+  if(adminTab==="predictions") content.appendChild(renderPredictionsPanel());
   if(adminTab==="leaderboard") content.appendChild(renderLeaderboardPanel());
+}
+
+function renderPredictionsPanel(){
+  const wrap = document.createElement("div");
+  const players = Object.entries(USERS).filter(([u,r])=>r.role!=="admin");
+  Object.keys(MATCHES).sort().forEach(id=>{
+    const match = MATCHES[id];
+    const rows = players.map(([u,r])=>{
+      const pred = (PREDICTIONS[u]||{})[id];
+      return `
+        <tr>
+          <td>${r.name}</td>
+          <td class="cred">${pred && pred.reg ? fmtScore(pred.reg) : '—'}</td>
+          <td class="cred">${pred && pred.et ? fmtScore(pred.et) : '—'}</td>
+          <td class="cred">${pred && pred.pen ? fmtScore(pred.pen) : '—'}</td>
+        </tr>
+      `;
+    }).join("");
+    const panel = document.createElement("div");
+    panel.className = "panel";
+    panel.innerHTML = `
+      <h3>${match.teamA} vs ${match.teamB} <span style="color:var(--muted);font-weight:400;font-size:13px;text-transform:none;letter-spacing:0;">(${match.label})</span></h3>
+      <table class="roster">
+        <thead><tr><th>Participante</th><th>90'</th><th>T. Extra</th><th>Penales</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="4" style="color:var(--muted);">Sin participantes.</td></tr>`}</tbody>
+      </table>
+    `;
+    wrap.appendChild(panel);
+  });
+  if(players.length===0){
+    wrap.innerHTML = `<div class="panel"><span style="color:var(--muted);">Aún no hay participantes.</span></div>`;
+  }
+  return wrap;
 }
 
 function renderParticipantsPanel(){
@@ -1168,33 +1361,57 @@ function renderLeaderboardPanel(){
   const players = Object.entries(USERS).filter(([u,r])=>r.role!=="admin");
   const scored = players.map(([u,r])=>{
     let total = 0;
-    Object.keys(MATCHES).forEach(id=>{
+    const perMatch = [];
+    Object.keys(MATCHES).sort().forEach(id=>{
       const match = MATCHES[id];
       if(match.result){
         const pred = (PREDICTIONS[u]||{})[id];
-        total += computeMatchPoints(pred, match.result).total;
+        const s = computeMatchPoints(pred, match.result);
+        total += s.total;
+        perMatch.push({ label:`${match.teamA} vs ${match.teamB}`, total:s.total, lines:s.lines });
       }
     });
-    return { username:u, name:r.name, total };
+    return { username:u, name:r.name, total, perMatch };
   }).sort((a,b)=>b.total-a.total);
 
   wrap.innerHTML = `
     <div class="panel">
       <h3>Tabla de posiciones</h3>
       <table class="roster">
-        <thead><tr><th>#</th><th>Participante</th><th>Puntos</th></tr></thead>
+        <thead><tr><th>#</th><th>Participante</th><th>Puntos</th><th></th></tr></thead>
         <tbody>
           ${scored.map((s,i)=>`
             <tr>
               <td><span class="rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</span></td>
               <td>${s.name}</td>
               <td class="cred">${s.total}</td>
+              <td><button class="btn btn-ghost btn-sm lb-toggle" data-u="${s.username}">Ver desglose</button></td>
             </tr>
-          `).join("") || `<tr><td colspan="3" style="color:var(--muted);">Aún no hay participantes.</td></tr>`}
+            <tr class="lb-detail hidden" id="detail-${s.username}">
+              <td colspan="4">
+                ${s.perMatch.length? s.perMatch.map(m=>`
+                  <div style="margin-bottom:10px;">
+                    <b>${m.label}</b> — <span class="cred">${m.total} pts</span>
+                    ${m.lines.length? `<div class="breakdown">${m.lines.map(l=>`• ${l}`).join('<br>')}</div>` : `<div class="breakdown">Sin puntos en este partido.</div>`}
+                  </div>
+                `).join("") : `<span style="color:var(--muted);">Aún no hay resultados cargados.</span>`}
+              </td>
+            </tr>
+          `).join("") || `<tr><td colspan="4" style="color:var(--muted);">Aún no hay participantes.</td></tr>`}
         </tbody>
       </table>
     </div>
   `;
+
+  wrap.querySelectorAll(".lb-toggle").forEach(btn=>{
+    btn.onclick = ()=>{
+      const u = btn.dataset.u;
+      const row = wrap.querySelector(`#detail-${u}`);
+      row.classList.toggle("hidden");
+      btn.textContent = row.classList.contains("hidden") ? "Ver desglose" : "Ocultar desglose";
+    };
+  });
+
   return wrap;
 }
 
@@ -1231,14 +1448,17 @@ function boot(){
   });
   db.ref("users").on("value", snap=>{
     USERS = snap.val() || {};
-    if(CURRENT_USER && CURRENT_USER.role==="admin" && (adminTab==="participants" || adminTab==="leaderboard")){
+    if(CURRENT_USER && CURRENT_USER.role==="admin" && (adminTab==="participants" || adminTab==="leaderboard" || adminTab==="predictions")){
       renderAdmin();
     }
   });
   db.ref("predictions").on("value", snap=>{
     PREDICTIONS = snap.val() || {};
-    if(CURRENT_USER && CURRENT_USER.role==="admin" && adminTab==="leaderboard"){
+    if(CURRENT_USER && CURRENT_USER.role==="admin" && (adminTab==="leaderboard" || adminTab==="predictions")){
       renderAdmin();
+    }
+    if(CURRENT_USER && CURRENT_USER.role==="player" && playerTab==="mis-pronosticos"){
+      renderPlayer();
     }
   });
 }

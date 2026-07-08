@@ -254,6 +254,100 @@ table.roster tr:last-child td{border-bottom:none;}
   .teams{font-size:17px;}
   .inline-form .field{min-width:100%;}
 }
+
+/* ---------- Poster-style match card (v2) ---------- */
+.mc{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  overflow:hidden;margin-bottom:28px;
+}
+.mc-topline{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;flex-wrap:wrap;gap:8px;
+  border-bottom:1px solid var(--line);
+}
+.mc-phase{
+  display:flex;align-items:center;gap:8px;font-family:var(--font-display);
+  color:var(--gold);text-transform:uppercase;letter-spacing:2px;font-size:13px;font-weight:600;
+}
+.mc-phase svg{flex-shrink:0;}
+.mc-when{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
+.mc-teams-row{
+  text-align:center;padding:18px 16px 14px;
+}
+.mc-teams-row .names{
+  font-family:var(--font-display);text-transform:uppercase;font-size:clamp(22px,5vw,34px);
+  letter-spacing:0.5px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;
+}
+.mc-teams-row .names .vsx{
+  font-family:var(--font-body);font-size:13px;color:var(--muted);font-weight:600;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:4px 10px;
+}
+.mc-photos{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
+}
+.mc-photo{
+  position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--night);
+}
+.mc-photo img{
+  width:100%;height:100%;object-fit:cover;object-position:top center;display:block;
+}
+.mc-photo::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(to top, rgba(11,18,32,0.92) 0%, rgba(11,18,32,0.15) 45%, transparent 65%);
+}
+.mc-photo .lbl{
+  position:absolute;left:14px;bottom:12px;z-index:2;
+  font-family:var(--font-display);text-transform:uppercase;letter-spacing:1px;
+  font-size:15px;color:var(--text);display:flex;align-items:center;gap:8px;
+}
+.mc-photo .lbl .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.mc-info-bar{
+  display:flex;gap:0;border-bottom:1px solid var(--line);
+}
+.mc-info-item{
+  flex:1;padding:12px 16px;font-size:12.5px;color:var(--muted);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;gap:3px;
+}
+.mc-info-item:last-child{border-right:none;}
+.mc-info-item b{color:var(--text);font-size:13.5px;font-weight:600;}
+.mc-body-inner{padding:22px 20px;}
+.predict-title{
+  text-align:center;font-family:var(--font-display);text-transform:uppercase;letter-spacing:2px;
+  font-size:13px;color:var(--muted);margin-bottom:16px;position:relative;
+}
+.predict-row{
+  display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;margin-bottom:20px;
+}
+.predict-team{display:flex;align-items:center;gap:10px;font-family:var(--font-display);text-transform:uppercase;font-size:15px;}
+.predict-team img{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--line);}
+.predict-team.right{flex-direction:row-reverse;}
+.stage-card{
+  border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;
+  display:flex;align-items:flex-start;gap:12px;background:var(--surface-2);
+}
+.stage-card .ico{
+  width:34px;height:34px;border-radius:8px;background:var(--night);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;
+}
+.stage-card .txt{flex:1;}
+.stage-card .txt .t{font-size:14px;font-weight:600;}
+.stage-card .txt .d{font-size:12.5px;color:var(--muted);margin-top:2px;}
+.stage-card input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold);margin-top:2px;}
+.mc-footer{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+  padding-top:16px;border-top:1px solid var(--line);
+}
+.mc-footer-info{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;color:var(--muted);}
+.mc-footer-info div b{display:block;color:var(--text);font-size:13.5px;font-weight:600;}
+.mc-tagline{
+  text-align:center;font-size:12.5px;color:var(--muted);padding:12px 20px 18px;
+}
+.mc-tagline .gold{color:var(--gold);font-weight:600;}
+@media (max-width:560px){
+  .mc-info-bar{flex-wrap:wrap;}
+  .mc-info-item{flex:1 1 50%;border-bottom:1px solid var(--line);}
+  .predict-row{gap:10px;}
+}
 </style>
 </head>
 <body>
@@ -282,11 +376,27 @@ const db = firebase.database();
 /* ======================================================================
    DATOS INICIALES: PARTIDOS
    ====================================================================== */
+const TEAM_IMAGES = {
+  "Francia":"images/francia.jpg",
+  "Marruecos":"images/marruecos.jpg",
+  "España":"images/espana.jpg",
+  "Bélgica":"images/belgica.jpg",
+  "Noruega":"images/noruega.jpg",
+  "Inglaterra":"images/inglaterra.jpg",
+  "Argentina":"images/argentina.jpg",
+  "Suiza":"images/suiza.jpg",
+};
+const TEAM_COLORS = {
+  "Francia":"#1E3A8A", "Marruecos":"#C1272D",
+  "España":"#C1272D", "Bélgica":"#DA291C",
+  "Noruega":"#BA0C2F", "Inglaterra":"#1E3A8A",
+  "Argentina":"#75AADB", "Suiza":"#DA291C",
+};
 const SEED_MATCHES = {
-  m1: { teamA:"Francia",   teamB:"Marruecos",  kickoff:"2026-07-09T14:00:00", label:"9 jul · 2:00 p.m." },
-  m2: { teamA:"España",    teamB:"Bélgica",    kickoff:"2026-07-10T13:00:00", label:"10 jul · 1:00 p.m." },
-  m3: { teamA:"Noruega",   teamB:"Inglaterra", kickoff:"2026-07-11T15:00:00", label:"11 jul · 3:00 p.m." },
-  m4: { teamA:"Argentina", teamB:"Suiza",      kickoff:"2026-07-11T19:00:00", label:"11 jul · 7:00 p.m." },
+  m1: { teamA:"Francia",   teamB:"Marruecos",  kickoff:"2026-07-09T14:00:00", label:"9 jul · 2:00 p.m.", phase:"Cuartos de Final", fecha:"9 Julio", hora:"2:00 p.m.", venue:"Estadio Boston" },
+  m2: { teamA:"España",    teamB:"Bélgica",    kickoff:"2026-07-10T13:00:00", label:"10 jul · 1:00 p.m.", phase:"Cuartos de Final", fecha:"10 Julio", hora:"1:00 p.m.", venue:"Estadio Los Ángeles" },
+  m3: { teamA:"Noruega",   teamB:"Inglaterra", kickoff:"2026-07-11T15:00:00", label:"11 jul · 3:00 p.m.", phase:"Cuartos de Final", fecha:"11 Julio", hora:"3:00 p.m.", venue:"Estadio Miami" },
+  m4: { teamA:"Argentina", teamB:"Suiza",      kickoff:"2026-07-11T19:00:00", label:"11 jul · 7:00 p.m.", phase:"Cuartos de Final", fecha:"11 Julio", hora:"7:00 p.m.", venue:"Estadio Kansas City" },
 };
 const DEFAULT_ADMIN = { username:"admin", password:"Mundial2026", name:"Administrador", role:"admin" };
 
@@ -314,9 +424,16 @@ function toast(msg){
    ====================================================================== */
 function ensureSeed(){
   db.ref("matches").once("value").then(snap=>{
-    if(!snap.exists()){
-      db.ref("matches").set(SEED_MATCHES);
-    }
+    const existing = snap.val() || {};
+    const updates = {};
+    Object.keys(SEED_MATCHES).forEach(id=>{
+      const merged = Object.assign({}, SEED_MATCHES[id], existing[id]||{});
+      // keep seed's metadata authoritative, but preserve any admin-entered result
+      Object.assign(merged, SEED_MATCHES[id]);
+      if(existing[id] && existing[id].result) merged.result = existing[id].result;
+      updates[id] = merged;
+    });
+    db.ref("matches").update(updates);
   });
   db.ref("users").once("value").then(snap=>{
     if(!snap.exists()){
@@ -550,62 +667,113 @@ function renderPlayerMatchCard(id, match){
   const myPred = (PREDICTIONS[CURRENT_USER.username] && PREDICTIONS[CURRENT_USER.username][id]) || {};
   const result = match.result || null;
   const card = document.createElement("div");
-  card.className = "match-card";
+  card.className = "mc";
 
   const scoring = result ? computeMatchPoints(myPred, result) : null;
+  const colorA = TEAM_COLORS[match.teamA] || "#7C8AA3";
+  const colorB = TEAM_COLORS[match.teamB] || "#7C8AA3";
+  const imgA = TEAM_IMAGES[match.teamA] || "";
+  const imgB = TEAM_IMAGES[match.teamB] || "";
 
   card.innerHTML = `
-    <div class="match-head">
-      <div class="teams">${match.teamA} <span class="vs">vs</span> ${match.teamB}</div>
-      <div class="match-meta">
-        <span>${match.label}</span>
+    <div class="mc-topline">
+      <div class="mc-phase">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 21h8M12 17v4M5 3h14v4a7 7 0 0 1-14 0V3ZM5 5H3a2 2 0 0 0 2 2M19 5h2a2 2 0 0 1-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        ${match.phase || ''}
+      </div>
+      <div class="mc-when">
+        <span>📅 ${match.label}</span>
         <span class="tag ${locked?'tag-locked':'tag-open'}">${locked?'Cerrado':'Abierto'}</span>
       </div>
     </div>
-    <div class="match-body">
-      <div class="stage-row">
-        <span class="stage-label">Marcador 90 minutos</span>
+
+    <div class="mc-teams-row">
+      <div class="names">
+        <span>${match.teamA}</span>
+        <span class="vsx">VS</span>
+        <span>${match.teamB}</span>
+      </div>
+    </div>
+
+    <div class="mc-photos">
+      <div class="mc-photo">
+        ${imgA?`<img src="${imgA}" alt="${match.teamA}">`:''}
+        <div class="lbl"><span class="dot" style="background:${colorA}"></span>${match.teamA}</div>
+      </div>
+      <div class="mc-photo">
+        ${imgB?`<img src="${imgB}" alt="${match.teamB}">`:''}
+        <div class="lbl"><span class="dot" style="background:${colorB}"></span>${match.teamB}</div>
+      </div>
+    </div>
+
+    <div class="mc-info-bar">
+      <div class="mc-info-item"><span>FASE</span><b>${match.phase||'—'}</b></div>
+      <div class="mc-info-item"><span>SEDE</span><b>${match.venue||'Por confirmar'}</b></div>
+      <div class="mc-info-item"><span>FECHA</span><b>${match.fecha||''}</b></div>
+      <div class="mc-info-item"><span>HORA</span><b>${match.hora||''}</b></div>
+    </div>
+
+    <div class="mc-body-inner">
+      <div class="predict-title">Predice el marcador</div>
+      <div class="predict-row">
+        <div class="predict-team">${imgA?`<img src="${imgA}" alt="">`:''}<span>${match.teamA}</span></div>
         <div class="score-inputs">
           <input type="number" min="0" id="${id}-rega" value="${myPred.reg?myPred.reg.a:''}" ${locked?'disabled':''}>
           <span class="dash">–</span>
           <input type="number" min="0" id="${id}-regb" value="${myPred.reg?myPred.reg.b:''}" ${locked?'disabled':''}>
         </div>
+        <div class="predict-team right">${imgB?`<img src="${imgB}" alt="">`:''}<span>${match.teamB}</span></div>
       </div>
 
-      <label class="toggle-line"><input type="checkbox" id="${id}-et-toggle" ${myPred.et?'checked':''} ${locked?'disabled':''}> Creo que va a tiempo extra — predecir marcador de tiempo extra</label>
-      <div class="stage-row ${myPred.et?'':'hidden'}" id="${id}-et-row">
-        <span class="stage-label">Marcador tiempo extra</span>
-        <div class="score-inputs">
-          <input type="number" min="0" id="${id}-eta" value="${myPred.et?myPred.et.a:''}" ${locked?'disabled':''}>
-          <span class="dash">–</span>
-          <input type="number" min="0" id="${id}-etb" value="${myPred.et?myPred.et.b:''}" ${locked?'disabled':''}>
+      <div class="stage-card">
+        <div class="ico">⏱️</div>
+        <div class="txt">
+          <div class="t">Tiempo extra</div>
+          <div class="d">Creo que va a tiempo extra — predecir marcador de tiempo extra</div>
+          <div class="stage-row ${myPred.et?'':'hidden'}" id="${id}-et-row" style="margin-top:10px;">
+            <div class="score-inputs">
+              <input type="number" min="0" id="${id}-eta" value="${myPred.et?myPred.et.a:''}" ${locked?'disabled':''}>
+              <span class="dash">–</span>
+              <input type="number" min="0" id="${id}-etb" value="${myPred.et?myPred.et.b:''}" ${locked?'disabled':''}>
+            </div>
+          </div>
         </div>
+        <input type="checkbox" id="${id}-et-toggle" ${myPred.et?'checked':''} ${locked?'disabled':''}>
       </div>
 
-      <label class="toggle-line"><input type="checkbox" id="${id}-pen-toggle" ${myPred.pen?'checked':''} ${locked?'disabled':''}> Creo que se define en penales — predecir penales</label>
-      <div class="${myPred.pen?'':'hidden'}" id="${id}-pen-block">
-        <div class="stage-row">
-          <span class="stage-label">Marcador de penales</span>
-          <div class="score-inputs">
-            <input type="number" min="0" id="${id}-pena" value="${myPred.pen?myPred.pen.a:''}" ${locked?'disabled':''}>
-            <span class="dash">–</span>
-            <input type="number" min="0" id="${id}-penb" value="${myPred.pen?myPred.pen.b:''}" ${locked?'disabled':''}>
+      <div class="stage-card">
+        <div class="ico">🎯</div>
+        <div class="txt">
+          <div class="t">Penales</div>
+          <div class="d">Creo que se define en penales — predecir penales</div>
+          <div class="${myPred.pen?'':'hidden'}" id="${id}-pen-block" style="margin-top:10px;">
+            <div class="score-inputs" style="margin-bottom:12px;">
+              <input type="number" min="0" id="${id}-pena" value="${myPred.pen?myPred.pen.a:''}" ${locked?'disabled':''}>
+              <span class="dash">–</span>
+              <input type="number" min="0" id="${id}-penb" value="${myPred.pen?myPred.pen.b:''}" ${locked?'disabled':''}>
+            </div>
+            <div class="pen-order-block">
+              <div class="pen-team">
+                <div class="lbl">Orden ${match.teamA} (acierta / falla, en orden)</div>
+                <div class="pen-dots" id="${id}-penA-dots" data-team="A"></div>
+              </div>
+              <div class="pen-team">
+                <div class="lbl">Orden ${match.teamB} (acierta / falla, en orden)</div>
+                <div class="pen-dots" id="${id}-penB-dots" data-team="B"></div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="pen-order-block">
-          <div class="pen-team">
-            <div class="lbl">Orden ${match.teamA} (acierta / falla, en orden)</div>
-            <div class="pen-dots" id="${id}-penA-dots" data-team="A"></div>
-          </div>
-          <div class="pen-team">
-            <div class="lbl">Orden ${match.teamB} (acierta / falla, en orden)</div>
-            <div class="pen-dots" id="${id}-penB-dots" data-team="B"></div>
-          </div>
-        </div>
+        <input type="checkbox" id="${id}-pen-toggle" ${myPred.pen?'checked':''} ${locked?'disabled':''}>
       </div>
 
-      <div class="save-row">
-        <button class="btn btn-gold btn-sm" id="${id}-save" ${locked?'disabled':''}>Guardar predicción</button>
+      <div class="mc-footer">
+        <div class="mc-footer-info">
+          <div><span>Regla</span><b>Editable hasta el inicio</b></div>
+        </div>
+        <button class="btn btn-gold" id="${id}-save" ${locked?'disabled':''}>🛡️ Guardar Pronóstico</button>
+      </div>
+      <div class="save-row" style="margin-top:10px;">
         <span class="save-hint">${locked? 'Predicciones cerradas: el partido ya inició.' : 'Puedes editar tu predicción hasta el inicio del partido.'}</span>
       </div>
 
@@ -617,6 +785,7 @@ function renderPlayerMatchCard(id, match){
         ${scoring.lines.length? `<div class="breakdown">${scoring.lines.map(l=>`• ${l}`).join('<br>')}</div>` : `<div class="breakdown">Sin puntos en este partido.</div>`}
       ` : ''}
     </div>
+    <div class="mc-tagline">🛡️ ¡Demuestra tu conocimiento y gana la <span class="gold">quiniela</span>!</div>
   `;
 
   // wire penalty dot state

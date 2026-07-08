@@ -398,12 +398,15 @@ table.roster tr:last-child td{border-bottom:none;}
   padding:24px 16px;background:var(--night);
 }
 .welcome-card-img{
-  max-width:760px;width:100%;background:var(--surface);border:1px solid var(--line);
+  max-width:1200px;width:100%;background:var(--surface);border:1px solid var(--line);
   border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);
 }
 .welcome-banner{width:100%;display:block;}
 .welcome-card-img .welcome-start-btn{
-  display:block;width:calc(100% - 40px);margin:20px auto 24px;padding:15px;font-size:16px;border-radius:8px;
+  display:block;width:calc(100% - 48px);margin:26px auto 30px;padding:18px;font-size:19px;border-radius:8px;
+}
+@media (min-width:900px){
+  .welcome-card-img .welcome-start-btn{font-size:21px;padding:20px;}
 }
 </style>
 </head>

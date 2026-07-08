@@ -331,8 +331,11 @@ function ensureSeed(){
 function genUsername(name, existing){
   const clean = name.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^a-z\s]/g,"").trim().split(/\s+/);
-  let base = (clean[0]||"jugador") + (clean[1] ? "." + clean[1] : "");
+    .replace(/[^a-z\s]/g,"").trim().split(/\s+/).filter(Boolean);
+  const first = clean[0] || "jugador";
+  const rest = clean.slice(1).join("");
+  let base = rest ? `${first}-${rest}` : first;
+  base = base.replace(/[.#$\[\]]/g, "");
   let candidate = base;
   let n = 1;
   while(existing[candidate]){

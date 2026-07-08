@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiniela Eliminación Directa — Mundial 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --night:#0B1220;
+  --surface:#131C2E;
+  --surface-2:#1B2740;
+  --line:#28344E;
+  --gold:#FFD447;
+  --red:#FF4757;
+  --green:#3DDC97;
+  --text:#F5F7FA;
+  --muted:#7C8AA3;
+  --font-display:'Oswald',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:radial-gradient(ellipse at top, #17223A 0%, var(--night) 55%);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--night);}
+a{color:var(--gold);}
+button{font-family:var(--font-body);cursor:pointer;}
+button:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.hidden{display:none !important;}
+
+/* ---------- Top bar / floodlight signature ---------- */
+.floodbar{
+  position:relative;
+  height:4px;
+  width:100%;
+  background:linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold) 80%, transparent);
+  box-shadow:0 0 24px 2px rgba(255,212,71,0.55);
+}
+header.top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 28px;
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand .mark{
+  font-family:var(--font-display);
+  font-size:13px;letter-spacing:3px;color:var(--night);
+  background:var(--gold);
+  padding:4px 8px;border-radius:3px;font-weight:600;
+}
+.brand h1{
+  font-family:var(--font-display);
+  font-size:20px;font-weight:600;letter-spacing:0.5px;margin:0;
+  text-transform:uppercase;
+}
+.brand h1 span{color:var(--gold);}
+.who{display:flex;align-items:center;gap:14px;font-size:14px;color:var(--muted);}
+.who b{color:var(--text);}
+.btn{
+  border:1px solid var(--line);background:var(--surface-2);color:var(--text);
+  padding:9px 16px;border-radius:6px;font-size:14px;font-weight:500;
+  transition:border-color .15s, transform .1s;
+}
+.btn:hover{border-color:var(--gold);}
+.btn:active{transform:scale(0.98);}
+.btn-gold{background:var(--gold);color:var(--night);border-color:var(--gold);font-weight:600;}
+.btn-gold:hover{background:#ffdd6a;}
+.btn-danger{border-color:var(--red);color:var(--red);background:transparent;}
+.btn-danger:hover{background:rgba(255,71,87,0.1);}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--muted);}
+.btn-ghost:hover{color:var(--text);}
+.btn-sm{padding:6px 12px;font-size:12.5px;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+main{max-width:1100px;margin:0 auto;padding:32px 20px 80px;}
+
+/* ---------- Login ---------- */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.login-card{
+  width:100%;max-width:400px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:36px 32px 32px;
+  position:relative;overflow:hidden;
+}
+.login-card::before{
+  content:"";position:absolute;top:-40%;right:-30%;width:260px;height:260px;
+  background:radial-gradient(circle, rgba(255,212,71,0.16), transparent 70%);
+}
+.login-eyebrow{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:2px;color:var(--gold);
+  text-transform:uppercase;margin-bottom:6px;
+}
+.login-card h2{
+  font-family:var(--font-display);font-size:28px;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.5px;
+}
+.login-card p.sub{color:var(--muted);font-size:14px;margin:0 0 26px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;letter-spacing:0.3px;}
+.field input, .field select{
+  width:100%;background:var(--night);border:1px solid var(--line);
+  color:var(--text);padding:11px 12px;border-radius:6px;font-size:15px;font-family:var(--font-body);
+}
+.field input:focus, .field select:focus{border-color:var(--gold);outline:none;}
+.error-msg{
+  color:var(--red);font-size:13px;margin:-6px 0 14px;min-height:16px;
+}
+.login-submit{width:100%;padding:12px;font-size:15px;margin-top:6px;}
+
+/* ---------- Tabs ---------- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:28px;flex-wrap:wrap;}
+.tab{
+  padding:11px 18px;font-size:14px;color:var(--muted);background:none;border:none;
+  border-bottom:2px solid transparent;font-weight:500;
+}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab:hover{color:var(--text);}
+
+/* ---------- Match cards ---------- */
+.section-title{
+  font-family:var(--font-display);text-transform:uppercase;letter-spacing:1px;
+  font-size:15px;color:var(--muted);margin:32px 0 14px;display:flex;align-items:center;gap:10px;
+}
+.section-title::after{content:"";flex:1;height:1px;background:var(--line);}
+.match-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  margin-bottom:16px;overflow:hidden;
+}
+.match-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;flex-wrap:wrap;gap:10px;
+  background:var(--surface-2);
+}
+.teams{display:flex;align-items:center;gap:14px;font-family:var(--font-display);font-size:20px;text-transform:uppercase;}
+.teams .vs{color:var(--muted);font-size:13px;font-family:var(--font-body);}
+.match-meta{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
+.tag{
+  font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:20px;
+  letter-spacing:0.5px;text-transform:uppercase;font-weight:600;
+}
+.tag-open{background:rgba(61,220,151,0.15);color:var(--green);}
+.tag-locked{background:rgba(255,71,87,0.15);color:var(--red);}
+.match-body{padding:20px;}
+
+.stage-row{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;
+}
+.stage-label{font-size:13px;color:var(--muted);min-width:150px;font-weight:500;}
+.score-inputs{display:flex;align-items:center;gap:8px;}
+.score-inputs input{
+  width:56px;text-align:center;background:var(--night);border:1px solid var(--line);
+  color:var(--text);padding:9px 4px;border-radius:6px;font-family:var(--font-mono);font-size:16px;font-weight:600;
+}
+.score-inputs input:disabled{opacity:0.45;}
+.score-inputs .dash{color:var(--muted);font-family:var(--font-mono);}
+.toggle-line{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:12px;}
+.toggle-line input{accent-color:var(--gold);}
+
+/* penalty order widget — signature element */
+.pen-order-block{
+  background:var(--night);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:10px;
+}
+.pen-team{margin-bottom:12px;}
+.pen-team:last-child{margin-bottom:0;}
+.pen-team .lbl{font-size:12.5px;color:var(--muted);margin-bottom:6px;}
+.pen-dots{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.pen-dot{
+  width:34px;height:34px;border-radius:50%;border:2px solid var(--line);
+  background:var(--surface);color:var(--muted);font-family:var(--font-mono);font-weight:700;font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:.12s;
+}
+.pen-dot[data-v="hit"]{border-color:var(--green);color:var(--green);background:rgba(61,220,151,0.12);}
+.pen-dot[data-v="miss"]{border-color:var(--red);color:var(--red);background:rgba(255,71,87,0.12);}
+.pen-dot-add,.pen-dot-remove{
+  width:34px;height:34px;border-radius:50%;border:1px dashed var(--line);background:transparent;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.pen-dot-add:hover,.pen-dot-remove:hover{border-color:var(--gold);color:var(--gold);}
+
+.save-row{display:flex;align-items:center;gap:12px;margin-top:16px;}
+.save-hint{font-size:12.5px;color:var(--muted);}
+
+.points-pill{
+  font-family:var(--font-mono);font-weight:700;font-size:15px;color:var(--gold);
+  background:rgba(255,212,71,0.1);padding:6px 12px;border-radius:20px;
+}
+.breakdown{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.7;}
+.breakdown b{color:var(--text);}
+
+/* ---------- Admin: participants ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px;margin-bottom:20px;}
+.panel h3{font-family:var(--font-display);text-transform:uppercase;font-size:16px;margin:0 0 16px;letter-spacing:0.5px;}
+.inline-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;}
+.inline-form .field{margin-bottom:0;flex:1;min-width:180px;}
+table.roster{width:100%;border-collapse:collapse;font-size:14px;}
+table.roster th{
+  text-align:left;color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;
+  letter-spacing:0.5px;padding:8px 10px;border-bottom:1px solid var(--line);
+}
+table.roster td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+table.roster tr:last-child td{border-bottom:none;}
+.cred{font-family:var(--font-mono);background:var(--night);padding:3px 8px;border-radius:5px;font-size:13px;}
+.copy-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.rank{
+  width:26px;height:26px;border-radius:50%;background:var(--surface-2);color:var(--muted);
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;font-weight:700;
+}
+.rank.gold{background:var(--gold);color:var(--night);}
+.rank.silver{background:#C9D2E0;color:var(--night);}
+.rank.bronze{background:#C8804A;color:var(--night);}
+
+/* ---------- Modal ---------- */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(4,8,18,0.7);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;
+}
+.modal{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:28px;
+}
+.modal h2{font-family:var(--font-display);text-transform:uppercase;font-size:20px;margin:0 0 4px;}
+.modal .close-row{display:flex;justify-content:flex-end;margin-top:20px;}
+.rule-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;gap:16px;}
+.rule-row:last-child{border-bottom:none;}
+.rule-row .pts{font-family:var(--font-mono);color:var(--gold);font-weight:700;white-space:nowrap;}
+.rule-group-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:18px 0 4px;}
+.rule-group-title:first-child{margin-top:0;}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--surface-2);border:1px solid var(--gold);color:var(--text);
+  padding:12px 20px;border-radius:8px;font-size:14px;z-index:100;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+
+@media (max-width:640px){
+  header.top{padding:14px 16px;}
+  .brand h1{font-size:16px;}
+  main{padding:20px 12px 60px;}
+  .teams{font-size:17px;}
+  .inline-form .field{min-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script>
+/* ======================================================================
+   CONFIGURACIÓN DE FIREBASE
+   Reemplaza este objeto con las credenciales de tu propio proyecto de
+   Firebase (Realtime Database). Ve a la consola de Firebase → Configuración
+   del proyecto → tus apps → SDK setup and configuration.
+   ====================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDX_seg1oQpthmmbfePPfzKzf1TI2BRk48",
+  authDomain: "quiniela-cuartos-de-final.firebaseapp.com",
+  databaseURL: "https://quiniela-cuartos-de-final-default-rtdb.firebaseio.com",
+  projectId: "quiniela-cuartos-de-final",
+  storageBucket: "quiniela-cuartos-de-final.firebasestorage.app",
+  messagingSenderId: "19846184577",
+  appId: "1:19846184577:web:b915dd1270ca932fbd9780"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ======================================================================
+   DATOS INICIALES: PARTIDOS
+   ====================================================================== */
+const SEED_MATCHES = {
+  m1: { teamA:"Francia",   teamB:"Marruecos",  kickoff:"2026-07-09T14:00:00", label:"9 jul · 2:00 p.m." },
+  m2: { teamA:"España",    teamB:"Bélgica",    kickoff:"2026-07-10T13:00:00", label:"10 jul · 1:00 p.m." },
+  m3: { teamA:"Noruega",   teamB:"Inglaterra", kickoff:"2026-07-11T15:00:00", label:"11 jul · 3:00 p.m." },
+  m4: { teamA:"Argentina", teamB:"Suiza",      kickoff:"2026-07-11T19:00:00", label:"11 jul · 7:00 p.m." },
+};
+const DEFAULT_ADMIN = { username:"admin", password:"Mundial2026", name:"Administrador", role:"admin" };
+
+/* ======================================================================
+   ESTADO
+   ====================================================================== */
+let CURRENT_USER = JSON.parse(sessionStorage.getItem("quiniela_session") || "null");
+let MATCHES = {};
+let USERS = {};
+let PREDICTIONS = {};
+
+const root = document.getElementById("root");
+
+function toast(msg){
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2600);
+}
+
+/* ======================================================================
+   SEED / BOOTSTRAP DB
+   ====================================================================== */
+function ensureSeed(){
+  db.ref("matches").once("value").then(snap=>{
+    if(!snap.exists()){
+      db.ref("matches").set(SEED_MATCHES);
+    }
+  });
+  db.ref("users").once("value").then(snap=>{
+    if(!snap.exists()){
+      db.ref("users/admin").set(DEFAULT_ADMIN);
+    }
+  });
+}
+
+/* ======================================================================
+   UTILIDADES
+   ====================================================================== */
+function genUsername(name, existing){
+  const clean = name.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z\s]/g,"").trim().split(/\s+/);
+  let base = (clean[0]||"jugador") + (clean[1] ? "." + clean[1] : "");
+  let candidate = base;
+  let n = 1;
+  while(existing[candidate]){
+    n++;
+    candidate = base + n;
+  }
+  return candidate;
+}
+function genPassword(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for(let i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+function isLocked(match){
+  return new Date() >= new Date(match.kickoff);
+}
+function fmtScore(s){
+  if(s==null || s.a===undefined || s.a===null || s.a==="" ) return null;
+  return `${s.a}-${s.b}`;
+}
+
+/* ======================================================================
+   CÁLCULO DE PUNTOS
+   Reglas:
+   Base (sobre 90 min): ganador/empate = 3, gol por equipo acertado = 1 c/u,
+   marcador exacto = 5.
+   Bonus: marcador exacto 90' = 1, marcador exacto en tiempo extra
+   (solo si hubo ET) = 1, marcador exacto en penales (solo si hubo penales) = 1,
+   orden exacto de penales acertado/fallado por equipo = 2 c/u.
+   ====================================================================== */
+function computeMatchPoints(pred, result){
+  if(!pred || !result || result.reg==null || result.reg.a===undefined || result.reg.a==="") return {total:0, lines:[]};
+  const lines = [];
+  let total = 0;
+  const reg = result.reg;
+  const predReg = pred.reg;
+
+  if(predReg && predReg.a!==undefined && predReg.a!==""){
+    // ganador o empate
+    const realOutcome = Math.sign(reg.a - reg.b);
+    const predOutcome = Math.sign(Number(predReg.a) - Number(predReg.b));
+    if(realOutcome === predOutcome){
+      total += 3; lines.push("Ganador/empate (90') acertado: +3");
+    }
+    // goles por equipo
+    let golesOk = 0;
+    if(Number(predReg.a) === Number(reg.a)){ total += 1; golesOk++; }
+    if(Number(predReg.b) === Number(reg.b)){ total += 1; golesOk++; }
+    if(golesOk>0) lines.push(`Goles por equipo acertados (${golesOk}): +${golesOk}`);
+    // marcador exacto (base)
+    if(Number(predReg.a)===Number(reg.a) && Number(predReg.b)===Number(reg.b)){
+      total += 5; lines.push("Marcador exacto: +5");
+      total += 1; lines.push("Bonus marcador 90 minutos: +1");
+    }
+  }
+
+  // tiempo extra
+  if(result.et && result.et.a!==undefined && result.et.a!==null && result.et.a!==""){
+    if(pred.et && pred.et.a!==undefined && pred.et.a!==""){
+      if(Number(pred.et.a)===Number(result.et.a) && Number(pred.et.b)===Number(result.et.b)){
+        total += 1; lines.push("Bonus marcador tiempo extra: +1");
+      }
+    }
+  }
+
+  // penales (marcador)
+  if(result.pen && result.pen.a!==undefined && result.pen.a!==null && result.pen.a!==""){
+    if(pred.pen && pred.pen.a!==undefined && pred.pen.a!==""){
+      if(Number(pred.pen.a)===Number(result.pen.a) && Number(pred.pen.b)===Number(result.pen.b)){
+        total += 1; lines.push("Bonus marcador penales: +1");
+      }
+    }
+    // orden de penales
+    if(result.penOrderA && pred.penOrderA && arraysEqual(result.penOrderA, pred.penOrderA)){
+      total += 2; lines.push("Orden de penales — equipo A: +2");
+    }
+    if(result.penOrderB && pred.penOrderB && arraysEqual(result.penOrderB, pred.penOrderB)){
+      total += 2; lines.push("Orden de penales — equipo B: +2");
+    }
+  }
+
+  return {total, lines};
+}
+function arraysEqual(a,b){
+  if(!a || !b || a.length!==b.length) return false;
+  return a.every((v,i)=>v===b[i]);
+}
+
+/* ======================================================================
+   RENDER: LOGIN
+   ====================================================================== */
+function renderLogin(err){
+  root.innerHTML = `
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="login-eyebrow">Mundial 2026 · Eliminación directa</div>
+        <h2>Quiniela</h2>
+        <p class="sub">Ingresa con el usuario y contraseña que te compartió el administrador.</p>
+        <div class="field">
+          <label>Usuario</label>
+          <input id="login-user" autocomplete="username" placeholder="ej. luis.recinos">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••">
+        </div>
+        <div class="error-msg">${err||""}</div>
+        <button class="btn btn-gold login-submit" id="login-btn">Ingresar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("login-btn").onclick = doLogin;
+  document.getElementById("login-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+  document.getElementById("login-user").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+}
+
+function doLogin(){
+  const u = document.getElementById("login-user").value.trim().toLowerCase();
+  const p = document.getElementById("login-pass").value.trim();
+  if(!u || !p){ renderLogin("Ingresa usuario y contraseña."); return; }
+  db.ref("users/"+u).once("value").then(snap=>{
+    const rec = snap.val();
+    if(!rec || rec.password !== p){
+      renderLogin("Usuario o contraseña incorrectos.");
+      return;
+    }
+    CURRENT_USER = { username:u, name:rec.name, role:rec.role||"player" };
+    sessionStorage.setItem("quiniela_session", JSON.stringify(CURRENT_USER));
+    boot();
+  });
+}
+
+function logout(){
+  sessionStorage.removeItem("quiniela_session");
+  CURRENT_USER = null;
+  boot();
+}
+
+/* ======================================================================
+   RULES MODAL
+   ====================================================================== */
+function openRulesModal(){
+  const el = document.createElement("div");
+  el.className = "modal-backdrop";
+  el.innerHTML = `
+    <div class="modal">
+      <h2>Reglas de puntuación</h2>
+      <p class="sub" style="color:var(--muted);font-size:13px;margin-top:0;">Las predicciones se cierran automáticamente al iniciar cada partido.</p>
+      <div class="rule-group-title">Puntos base (sobre el marcador de 90 minutos)</div>
+      <div class="rule-row"><span>Acertar el ganador o el empate del partido</span><span class="pts">3 pts</span></div>
+      <div class="rule-row"><span>Acertar la cantidad de goles de un equipo (c/u)</span><span class="pts">1 pt</span></div>
+      <div class="rule-row"><span>Acertar el marcador exacto</span><span class="pts">5 pts</span></div>
+      <div class="rule-group-title">Puntos extra</div>
+      <div class="rule-row"><span>Marcador exacto en los 90 minutos</span><span class="pts">1 pt</span></div>
+      <div class="rule-row"><span>Marcador exacto en el tiempo extra</span><span class="pts">1 pt</span></div>
+      <div class="rule-row"><span>Marcador exacto en los penales</span><span class="pts">1 pt</span></div>
+      <div class="rule-row"><span>Orden exacto de acierta/falla en penales (por equipo)</span><span class="pts">2 pts</span></div>
+      <div class="close-row"><button class="btn btn-gold btn-sm" id="close-rules">Cerrar</button></div>
+    </div>
+  `;
+  document.body.appendChild(el);
+  el.addEventListener("click", e=>{ if(e.target===el) el.remove(); });
+  el.querySelector("#close-rules").onclick = ()=>el.remove();
+}
+
+/* ======================================================================
+   TOP BAR (compartido)
+   ====================================================================== */
+function topBar(activeTab, tabs){
+  return `
+    <div class="floodbar"></div>
+    <header class="top">
+      <div class="brand">
+        <span class="mark">M26</span>
+        <h1>Quiniela <span>· Eliminación Directa</span></h1>
+      </div>
+      <div class="who">
+        <span>Hola, <b>${CURRENT_USER.name||CURRENT_USER.username}</b></span>
+        <button class="btn btn-ghost btn-sm" id="rules-btn">Reglas</button>
+        <button class="btn btn-ghost btn-sm" id="logout-btn">Salir</button>
+      </div>
+    </header>
+  `;
+}
+function wireTopBar(){
+  document.getElementById("rules-btn").onclick = openRulesModal;
+  document.getElementById("logout-btn").onclick = logout;
+}
+
+/* ======================================================================
+   RENDER: PLAYER VIEW
+   ====================================================================== */
+function renderPlayer(){
+  const matchIds = Object.keys(MATCHES).sort();
+  root.innerHTML = `
+    ${topBar()}
+    <main>
+      <div class="section-title">Tus predicciones</div>
+      <div id="matches-list"></div>
+    </main>
+  `;
+  wireTopBar();
+  const list = document.getElementById("matches-list");
+  matchIds.forEach(id=>{
+    list.appendChild(renderPlayerMatchCard(id, MATCHES[id]));
+  });
+}
+
+function renderPlayerMatchCard(id, match){
+  const locked = isLocked(match);
+  const myPred = (PREDICTIONS[CURRENT_USER.username] && PREDICTIONS[CURRENT_USER.username][id]) || {};
+  const result = match.result || null;
+  const card = document.createElement("div");
+  card.className = "match-card";
+
+  const scoring = result ? computeMatchPoints(myPred, result) : null;
+
+  card.innerHTML = `
+    <div class="match-head">
+      <div class="teams">${match.teamA} <span class="vs">vs</span> ${match.teamB}</div>
+      <div class="match-meta">
+        <span>${match.label}</span>
+        <span class="tag ${locked?'tag-locked':'tag-open'}">${locked?'Cerrado':'Abierto'}</span>
+      </div>
+    </div>
+    <div class="match-body">
+      <div class="stage-row">
+        <span class="stage-label">Marcador 90 minutos</span>
+        <div class="score-inputs">
+          <input type="number" min="0" id="${id}-rega" value="${myPred.reg?myPred.reg.a:''}" ${locked?'disabled':''}>
+          <span class="dash">–</span>
+          <input type="number" min="0" id="${id}-regb" value="${myPred.reg?myPred.reg.b:''}" ${locked?'disabled':''}>
+        </div>
+      </div>
+
+      <label class="toggle-line"><input type="checkbox" id="${id}-et-toggle" ${myPred.et?'checked':''} ${locked?'disabled':''}> Creo que va a tiempo extra — predecir marcador de tiempo extra</label>
+      <div class="stage-row ${myPred.et?'':'hidden'}" id="${id}-et-row">
+        <span class="stage-label">Marcador tiempo extra</span>
+        <div class="score-inputs">
+          <input type="number" min="0" id="${id}-eta" value="${myPred.et?myPred.et.a:''}" ${locked?'disabled':''}>
+          <span class="dash">–</span>
+          <input type="number" min="0" id="${id}-etb" value="${myPred.et?myPred.et.b:''}" ${locked?'disabled':''}>
+        </div>
+      </div>
+
+      <label class="toggle-line"><input type="checkbox" id="${id}-pen-toggle" ${myPred.pen?'checked':''} ${locked?'disabled':''}> Creo que se define en penales — predecir penales</label>
+      <div class="${myPred.pen?'':'hidden'}" id="${id}-pen-block">
+        <div class="stage-row">
+          <span class="stage-label">Marcador de penales</span>
+          <div class="score-inputs">
+            <input type="number" min="0" id="${id}-pena" value="${myPred.pen?myPred.pen.a:''}" ${locked?'disabled':''}>
+            <span class="dash">–</span>
+            <input type="number" min="0" id="${id}-penb" value="${myPred.pen?myPred.pen.b:''}" ${locked?'disabled':''}>
+          </div>
+        </div>
+        <div class="pen-order-block">
+          <div class="pen-team">
+            <div class="lbl">Orden ${match.teamA} (acierta / falla, en orden)</div>
+            <div class="pen-dots" id="${id}-penA-dots" data-team="A"></div>
+          </div>
+          <div class="pen-team">
+            <div class="lbl">Orden ${match.teamB} (acierta / falla, en orden)</div>
+            <div class="pen-dots" id="${id}-penB-dots" data-team="B"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="save-row">
+        <button class="btn btn-gold btn-sm" id="${id}-save" ${locked?'disabled':''}>Guardar predicción</button>
+        <span class="save-hint">${locked? 'Predicciones cerradas: el partido ya inició.' : 'Puedes editar tu predicción hasta el inicio del partido.'}</span>
+      </div>
+
+      ${result ? `
+        <div class="save-row" style="margin-top:18px;border-top:1px solid var(--line);padding-top:16px;">
+          <span class="points-pill">${scoring.total} pts</span>
+          <span class="save-hint">Resultado oficial: ${fmtScore(result.reg)}${result.et?` (ET ${fmtScore(result.et)})`:''}${result.pen?` (Pen ${fmtScore(result.pen)})`:''}</span>
+        </div>
+        ${scoring.lines.length? `<div class="breakdown">${scoring.lines.map(l=>`• ${l}`).join('<br>')}</div>` : `<div class="breakdown">Sin puntos en este partido.</div>`}
+      ` : ''}
+    </div>
+  `;
+
+  // wire penalty dot state
+  const penState = { A: (myPred.penOrderA||[]).slice(), B: (myPred.penOrderB||[]).slice() };
+  function renderDots(team){
+    const wrap = card.querySelector(`#${id}-pen${team}-dots`);
+    wrap.innerHTML = "";
+    penState[team].forEach((v,i)=>{
+      const dot = document.createElement(locked?'span':'button');
+      dot.className = "pen-dot";
+      dot.dataset.v = v;
+      dot.textContent = v==="hit" ? "✓" : "✗";
+      if(!locked){
+        dot.onclick = ()=>{ penState[team][i] = v==="hit" ? "miss" : "hit"; renderDots(team); };
+      }
+      wrap.appendChild(dot);
+    });
+    if(!locked){
+      if(penState[team].length < 8){
+        const add = document.createElement("button");
+        add.className = "pen-dot-add"; add.textContent = "+";
+        add.onclick = ()=>{ penState[team].push("hit"); renderDots(team); };
+        wrap.appendChild(add);
+      }
+      if(penState[team].length > 0){
+        const rem = document.createElement("button");
+        rem.className = "pen-dot-remove"; rem.textContent = "–";
+        rem.onclick = ()=>{ penState[team].pop(); renderDots(team); };
+        wrap.appendChild(rem);
+      }
+    }
+  }
+  renderDots("A"); renderDots("B");
+
+  if(!locked){
+    card.querySelector(`#${id}-et-toggle`).onchange = (e)=>{
+      card.querySelector(`#${id}-et-row`).classList.toggle("hidden", !e.target.checked);
+    };
+    card.querySelector(`#${id}-pen-toggle`).onchange = (e)=>{
+      card.querySelector(`#${id}-pen-block`).classList.toggle("hidden", !e.target.checked);
+    };
+    card.querySelector(`#${id}-save`).onclick = ()=>{
+      const rega = card.querySelector(`#${id}-rega`).value;
+      const regb = card.querySelector(`#${id}-regb`).value;
+      if(rega==="" || regb===""){ toast("Ingresa el marcador de 90 minutos."); return; }
+      const pred = { reg: { a:Number(rega), b:Number(regb) } };
+      if(card.querySelector(`#${id}-et-toggle`).checked){
+        const eta = card.querySelector(`#${id}-eta`).value, etb = card.querySelector(`#${id}-etb`).value;
+        if(eta!=="" && etb!=="") pred.et = { a:Number(eta), b:Number(etb) };
+      }
+      if(card.querySelector(`#${id}-pen-toggle`).checked){
+        const pa = card.querySelector(`#${id}-pena`).value, pb = card.querySelector(`#${id}-penb`).value;
+        if(pa!=="" && pb!=="") pred.pen = { a:Number(pa), b:Number(pb) };
+        pred.penOrderA = penState.A.slice();
+        pred.penOrderB = penState.B.slice();
+      }
+      db.ref(`predictions/${CURRENT_USER.username}/${id}`).set(pred).then(()=>{
+        toast("Predicción guardada.");
+      });
+    };
+  }
+
+  return card;
+}
+
+/* ======================================================================
+   RENDER: ADMIN VIEW
+   ====================================================================== */
+let adminTab = "participants";
+function renderAdmin(){
+  root.innerHTML = `
+    ${topBar()}
+    <main>
+      <div class="tabs">
+        <button class="tab ${adminTab==='participants'?'active':''}" data-tab="participants">Participantes</button>
+        <button class="tab ${adminTab==='matches'?'active':''}" data-tab="matches">Resultados</button>
+        <button class="tab ${adminTab==='leaderboard'?'active':''}" data-tab="leaderboard">Tabla de posiciones</button>
+      </div>
+      <div id="admin-content"></div>
+    </main>
+  `;
+  wireTopBar();
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.onclick = ()=>{ adminTab = t.dataset.tab; renderAdmin(); };
+  });
+  const content = document.getElementById("admin-content");
+  if(adminTab==="participants") content.appendChild(renderParticipantsPanel());
+  if(adminTab==="matches") content.appendChild(renderMatchesPanel());
+  if(adminTab==="leaderboard") content.appendChild(renderLeaderboardPanel());
+}
+
+function renderParticipantsPanel(){
+  const wrap = document.createElement("div");
+  const players = Object.entries(USERS).filter(([u,r])=>r.role!=="admin");
+
+  wrap.innerHTML = `
+    <div class="panel">
+      <h3>Agregar participante</h3>
+      <div class="inline-form">
+        <div class="field">
+          <label>Nombre completo</label>
+          <input id="new-name" placeholder="ej. Ricardo Reyes">
+        </div>
+        <button class="btn btn-gold" id="add-participant">Generar credenciales</button>
+      </div>
+      <div id="new-cred-box"></div>
+    </div>
+    <div class="panel">
+      <h3>Participantes (${players.length})</h3>
+      <table class="roster">
+        <thead><tr><th>Nombre</th><th>Usuario</th><th>Contraseña</th><th></th></tr></thead>
+        <tbody>
+          ${players.map(([u,r])=>`
+            <tr>
+              <td>${r.name}</td>
+              <td><span class="cred">${u}</span></td>
+              <td><span class="cred">${r.password}</span></td>
+              <td><button class="btn btn-danger btn-sm" data-del="${u}">Eliminar</button></td>
+            </tr>
+          `).join("") || `<tr><td colspan="4" style="color:var(--muted);">Aún no hay participantes.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  wrap.querySelector("#add-participant").onclick = ()=>{
+    const nameInput = wrap.querySelector("#new-name");
+    const name = nameInput.value.trim();
+    if(!name){ toast("Escribe el nombre del participante."); return; }
+    const username = genUsername(name, USERS);
+    const password = genPassword();
+    db.ref("users/"+username).set({ username, name, password, role:"player" }).then(()=>{
+      nameInput.value = "";
+      wrap.querySelector("#new-cred-box").innerHTML = `
+        <div class="panel" style="margin-top:14px;background:var(--surface-2);">
+          <div class="copy-line">
+            <span>Credenciales de <b>${name}</b>:</span>
+            <span class="cred">${username}</span> / <span class="cred">${password}</span>
+            <button class="btn btn-sm btn-ghost" id="copy-cred">Copiar mensaje</button>
+          </div>
+        </div>
+      `;
+      wrap.querySelector("#copy-cred").onclick = ()=>{
+        const msg = `¡Hola ${name}! Tus accesos para la quiniela del Mundial:\nUsuario: ${username}\nContraseña: ${password}\nEntra aquí: ${location.href}`;
+        navigator.clipboard.writeText(msg).then(()=>toast("Mensaje copiado."));
+      };
+      toast("Participante creado.");
+    });
+  };
+
+  wrap.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const u = btn.dataset.del;
+      if(confirm(`¿Eliminar a ${USERS[u].name}? Esto también borrará sus predicciones.`)){
+        db.ref("users/"+u).remove();
+        db.ref("predictions/"+u).remove();
+      }
+    };
+  });
+
+  return wrap;
+}
+
+function renderMatchesPanel(){
+  const wrap = document.createElement("div");
+  Object.keys(MATCHES).sort().forEach(id=>{
+    wrap.appendChild(renderAdminMatchCard(id, MATCHES[id]));
+  });
+  return wrap;
+}
+
+function renderAdminMatchCard(id, match){
+  const r = match.result || {};
+  const card = document.createElement("div");
+  card.className = "match-card";
+  card.innerHTML = `
+    <div class="match-head">
+      <div class="teams">${match.teamA} <span class="vs">vs</span> ${match.teamB}</div>
+      <div class="match-meta"><span>${match.label}</span></div>
+    </div>
+    <div class="match-body">
+      <div class="stage-row">
+        <span class="stage-label">Marcador 90 minutos</span>
+        <div class="score-inputs">
+          <input type="number" min="0" id="${id}-rega" value="${r.reg?r.reg.a:''}">
+          <span class="dash">–</span>
+          <input type="number" min="0" id="${id}-regb" value="${r.reg?r.reg.b:''}">
+        </div>
+      </div>
+      <label class="toggle-line"><input type="checkbox" id="${id}-et-toggle" ${r.et?'checked':''}> ¿Fue a tiempo extra?</label>
+      <div class="stage-row ${r.et?'':'hidden'}" id="${id}-et-row">
+        <span class="stage-label">Marcador tiempo extra</span>
+        <div class="score-inputs">
+          <input type="number" min="0" id="${id}-eta" value="${r.et?r.et.a:''}">
+          <span class="dash">–</span>
+          <input type="number" min="0" id="${id}-etb" value="${r.et?r.et.b:''}">
+        </div>
+      </div>
+      <label class="toggle-line"><input type="checkbox" id="${id}-pen-toggle" ${r.pen?'checked':''}> ¿Se definió en penales?</label>
+      <div class="${r.pen?'':'hidden'}" id="${id}-pen-block">
+        <div class="stage-row">
+          <span class="stage-label">Marcador de penales</span>
+          <div class="score-inputs">
+            <input type="number" min="0" id="${id}-pena" value="${r.pen?r.pen.a:''}">
+            <span class="dash">–</span>
+            <input type="number" min="0" id="${id}-penb" value="${r.pen?r.pen.b:''}">
+          </div>
+        </div>
+        <div class="pen-order-block">
+          <div class="pen-team">
+            <div class="lbl">Orden real ${match.teamA}</div>
+            <div class="pen-dots" id="${id}-penA-dots"></div>
+          </div>
+          <div class="pen-team">
+            <div class="lbl">Orden real ${match.teamB}</div>
+            <div class="pen-dots" id="${id}-penB-dots"></div>
+          </div>
+        </div>
+      </div>
+      <div class="save-row">
+        <button class="btn btn-gold btn-sm" id="${id}-save-result">Guardar resultado</button>
+      </div>
+    </div>
+  `;
+
+  const penState = { A: (r.penOrderA||[]).slice(), B: (r.penOrderB||[]).slice() };
+  function renderDots(team){
+    const wrap2 = card.querySelector(`#${id}-pen${team}-dots`);
+    wrap2.innerHTML = "";
+    penState[team].forEach((v,i)=>{
+      const dot = document.createElement("button");
+      dot.className = "pen-dot"; dot.dataset.v = v;
+      dot.textContent = v==="hit"?"✓":"✗";
+      dot.onclick = ()=>{ penState[team][i] = v==="hit"?"miss":"hit"; renderDots(team); };
+      wrap2.appendChild(dot);
+    });
+    const add = document.createElement("button");
+    add.className = "pen-dot-add"; add.textContent = "+";
+    add.onclick = ()=>{ penState[team].push("hit"); renderDots(team); };
+    wrap2.appendChild(add);
+    if(penState[team].length>0){
+      const rem = document.createElement("button");
+      rem.className = "pen-dot-remove"; rem.textContent = "–";
+      rem.onclick = ()=>{ penState[team].pop(); renderDots(team); };
+      wrap2.appendChild(rem);
+    }
+  }
+  renderDots("A"); renderDots("B");
+
+  card.querySelector(`#${id}-et-toggle`).onchange = e=>card.querySelector(`#${id}-et-row`).classList.toggle("hidden", !e.target.checked);
+  card.querySelector(`#${id}-pen-toggle`).onchange = e=>card.querySelector(`#${id}-pen-block`).classList.toggle("hidden", !e.target.checked);
+
+  card.querySelector(`#${id}-save-result`).onclick = ()=>{
+    const rega = card.querySelector(`#${id}-rega`).value, regb = card.querySelector(`#${id}-regb`).value;
+    if(rega==="" || regb===""){ toast("Ingresa el marcador de 90 minutos."); return; }
+    const result = { reg:{a:Number(rega), b:Number(regb)} };
+    if(card.querySelector(`#${id}-et-toggle`).checked){
+      const eta=card.querySelector(`#${id}-eta`).value, etb=card.querySelector(`#${id}-etb`).value;
+      if(eta!=="" && etb!=="") result.et = {a:Number(eta), b:Number(etb)};
+    }
+    if(card.querySelector(`#${id}-pen-toggle`).checked){
+      const pa=card.querySelector(`#${id}-pena`).value, pb=card.querySelector(`#${id}-penb`).value;
+      if(pa!=="" && pb!=="") result.pen = {a:Number(pa), b:Number(pb)};
+      result.penOrderA = penState.A.slice();
+      result.penOrderB = penState.B.slice();
+    }
+    db.ref(`matches/${id}/result`).set(result).then(()=>toast("Resultado guardado."));
+  };
+
+  return card;
+}
+
+function renderLeaderboardPanel(){
+  const wrap = document.createElement("div");
+  const players = Object.entries(USERS).filter(([u,r])=>r.role!=="admin");
+  const scored = players.map(([u,r])=>{
+    let total = 0;
+    Object.keys(MATCHES).forEach(id=>{
+      const match = MATCHES[id];
+      if(match.result){
+        const pred = (PREDICTIONS[u]||{})[id];
+        total += computeMatchPoints(pred, match.result).total;
+      }
+    });
+    return { username:u, name:r.name, total };
+  }).sort((a,b)=>b.total-a.total);
+
+  wrap.innerHTML = `
+    <div class="panel">
+      <h3>Tabla de posiciones</h3>
+      <table class="roster">
+        <thead><tr><th>#</th><th>Participante</th><th>Puntos</th></tr></thead>
+        <tbody>
+          ${scored.map((s,i)=>`
+            <tr>
+              <td><span class="rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</span></td>
+              <td>${s.name}</td>
+              <td class="cred">${s.total}</td>
+            </tr>
+          `).join("") || `<tr><td colspan="3" style="color:var(--muted);">Aún no hay participantes.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+  return wrap;
+}
+
+/* ======================================================================
+   BOOT
+   ====================================================================== */
+function boot(){
+  if(!CURRENT_USER){
+    renderLogin("");
+    return;
+  }
+  Promise.all([
+    db.ref("matches").once("value"),
+    db.ref("users").once("value"),
+    db.ref("predictions").once("value"),
+  ]).then(([mSnap,uSnap,pSnap])=>{
+    MATCHES = mSnap.val() || {};
+    USERS = uSnap.val() || {};
+    PREDICTIONS = pSnap.val() || {};
+    if(CURRENT_USER.role === "admin"){
+      renderAdmin();
+    } else {
+      renderPlayer();
+    }
+  });
+
+  // live updates for matches/results while a session is active
+  db.ref("matches").on("value", snap=>{
+    MATCHES = snap.val() || {};
+    if(CURRENT_USER){
+      if(CURRENT_USER.role==="admin" && adminTab==="matches") renderAdmin();
+      if(CURRENT_USER.role==="player") renderPlayer();
+    }
+  });
+}
+
+ensureSeed();
+boot();
+</script>
+</body>
+</html>

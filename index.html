@@ -553,20 +553,27 @@ function computeMatchPoints(pred, result){
   const predReg = pred.reg;
 
   if(predReg && predReg.a!==undefined && predReg.a!==""){
-    // ganador o empate
-    const realOutcome = Math.sign(reg.a - reg.b);
-    const predOutcome = Math.sign(Number(predReg.a) - Number(predReg.b));
-    if(realOutcome === predOutcome){
-      total += 3; lines.push("Ganador/empate (90') acertado: +3");
-    }
-    // goles por equipo
-    let golesOk = 0;
-    if(Number(predReg.a) === Number(reg.a)){ total += 1; golesOk++; }
-    if(Number(predReg.b) === Number(reg.b)){ total += 1; golesOk++; }
-    if(golesOk>0) lines.push(`Goles por equipo acertados (${golesOk}): +${golesOk}`);
-    // marcador exacto (base)
-    if(Number(predReg.a)===Number(reg.a) && Number(predReg.b)===Number(reg.b)){
+    const exactMatch = Number(predReg.a)===Number(reg.a) && Number(predReg.b)===Number(reg.b);
+
+    if(exactMatch){
+      // marcador exacto: excluyente — no se suman también ganador/empate ni goles por equipo
       total += 5; lines.push("Marcador exacto: +5");
+    } else {
+      // ganador o empate
+      const realOutcome = Math.sign(reg.a - reg.b);
+      const predOutcome = Math.sign(Number(predReg.a) - Number(predReg.b));
+      if(realOutcome === predOutcome){
+        total += 3; lines.push("Ganador/empate (90') acertado: +3");
+      }
+      // goles por equipo
+      let golesOk = 0;
+      if(Number(predReg.a) === Number(reg.a)){ total += 1; golesOk++; }
+      if(Number(predReg.b) === Number(reg.b)){ total += 1; golesOk++; }
+      if(golesOk>0) lines.push(`Goles por equipo acertados (${golesOk}): +${golesOk}`);
+    }
+
+    // bonus marcador 90 minutos (categoría de puntos extra, independiente de lo anterior)
+    if(exactMatch){
       total += 1; lines.push("Bonus marcador 90 minutos: +1");
     }
   }

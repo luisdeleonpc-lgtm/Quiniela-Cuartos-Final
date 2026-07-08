@@ -1491,6 +1491,28 @@ function boot(){
 
 ensureSeed();
 boot();
+
+/* ======================================================================
+   REVISIÓN PERIÓDICA DE BLOQUEO
+   Verifica cada 15s si algún partido cruzó el umbral de "5 minutos antes
+   del inicio". Si el estado de bloqueo cambió mientras el participante
+   tenía la pantalla de predicciones abierta, se vuelve a dibujar para
+   que los campos se deshabiliten de inmediato, sin necesidad de refrescar.
+   ====================================================================== */
+let lastLockSignature = null;
+function lockSignature(){
+  return Object.keys(MATCHES).sort().map(id=>isLocked(MATCHES[id])?'1':'0').join('');
+}
+setInterval(()=>{
+  if(CURRENT_USER && CURRENT_USER.role==="player" && Object.keys(MATCHES).length){
+    const sig = lockSignature();
+    if(lastLockSignature!==null && sig!==lastLockSignature && playerTab==="predicciones"){
+      toast("Un partido acaba de cerrarse para predicciones.");
+      renderPlayer();
+    }
+    lastLockSignature = sig;
+  }
+}, 15000);
 </script>
 </body>
 </html>

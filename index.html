@@ -391,6 +391,20 @@ table.roster tr:last-child td{border-bottom:none;}
   text-align:center;font-size:12.5px;color:var(--muted);font-style:italic;margin-top:20px;
   padding-top:16px;border-top:1px solid var(--line);
 }
+
+/* ---------- Welcome screen (image-based) ---------- */
+.welcome-wrap-img{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:24px 16px;background:var(--night);
+}
+.welcome-card-img{
+  max-width:760px;width:100%;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.welcome-banner{width:100%;display:block;}
+.welcome-card-img .welcome-start-btn{
+  display:block;width:calc(100% - 40px);margin:20px auto 24px;padding:15px;font-size:16px;border-radius:8px;
+}
 </style>
 </head>
 <body>
@@ -635,34 +649,10 @@ function doLogin(){
 
 function renderWelcome(){
   root.innerHTML = `
-    <div class="welcome-wrap">
-      <div class="welcome-card">
-        <div class="welcome-eyebrow">Mundial 2026 · ${CURRENT_USER.name}</div>
-        <h1 class="welcome-title">Bienvenido a la <span>Quiniela de Cuartos de Final</span></h1>
-
-        <div class="welcome-section welcome-rules">
-          <h4>📋 Reglas de puntuación</h4>
-          <div class="rule-row"><span>Ganador o empate del partido</span><span class="pts">3 pts</span></div>
-          <div class="rule-row"><span>Goles de cada equipo acertados (c/u)</span><span class="pts">1 pt</span></div>
-          <div class="rule-row"><span>Marcador exacto</span><span class="pts">5 pts</span></div>
-          <div class="rule-row"><span>Marcador exacto 90' / tiempo extra / penales</span><span class="pts">1 pt c/u</span></div>
-          <div class="rule-row"><span>Orden exacto de penales por equipo</span><span class="pts">2 pts</span></div>
-        </div>
-
-        <div class="welcome-section">
-          <h4>🏆 Premio</h4>
-          <div class="prize-box">
-            <div class="ico">🍽️</div>
-            <div class="txt">
-              <b>Almuerzo ejecutivo de La Estancia</b>
-              <span>Para quien más puntos acumule al final de cuartos de final</span>
-            </div>
-          </div>
-        </div>
-
+    <div class="welcome-wrap-img">
+      <div class="welcome-card-img">
+        <img src="bienvenida.jpg" alt="Bienvenido a la Quiniela de Cuartos de Final" class="welcome-banner">
         <button class="btn btn-gold welcome-start-btn" id="start-btn">Iniciar Pronóstico</button>
-
-        <div class="welcome-footer">⚽ Un buen pronóstico empieza por conocer bien a los equipos — ¡que gane el que más sabe de fútbol!</div>
       </div>
     </div>
   `;

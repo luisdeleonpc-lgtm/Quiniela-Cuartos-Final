@@ -297,6 +297,7 @@ let CURRENT_USER = JSON.parse(sessionStorage.getItem("quiniela_session") || "nul
 let MATCHES = {};
 let USERS = {};
 let PREDICTIONS = {};
+let lastCreatedCred = null;
 
 const root = document.getElementById("root");
 
@@ -696,7 +697,7 @@ function renderAdmin(){
   `;
   wireTopBar();
   document.querySelectorAll(".tab").forEach(t=>{
-    t.onclick = ()=>{ adminTab = t.dataset.tab; renderAdmin(); };
+    t.onclick = ()=>{ adminTab = t.dataset.tab; lastCreatedCred = null; renderAdmin(); };
   });
   const content = document.getElementById("admin-content");
   if(adminTab==="participants") content.appendChild(renderParticipantsPanel());
@@ -718,7 +719,17 @@ function renderParticipantsPanel(){
         </div>
         <button class="btn btn-gold" id="add-participant">Generar credenciales</button>
       </div>
-      <div id="new-cred-box"></div>
+      <div id="new-cred-box">
+        ${lastCreatedCred ? `
+          <div class="panel" style="margin-top:14px;background:var(--surface-2);">
+            <div class="copy-line">
+              <span>Credenciales de <b>${lastCreatedCred.name}</b>:</span>
+              <span class="cred">${lastCreatedCred.username}</span> / <span class="cred">${lastCreatedCred.password}</span>
+              <button class="btn btn-sm btn-ghost" id="copy-cred">Copiar mensaje</button>
+            </div>
+          </div>
+        ` : ''}
+      </div>
     </div>
     <div class="panel">
       <h3>Participantes (${players.length})</h3>
@@ -738,28 +749,39 @@ function renderParticipantsPanel(){
     </div>
   `;
 
+  if(lastCreatedCred){
+    wrap.querySelector("#copy-cred").onclick = ()=>{
+      const c = lastCreatedCred;
+      const msg = `¡Hola ${c.name}! Tus accesos para la quiniela del Mundial:\nUsuario: ${c.username}\nContraseña: ${c.password}\nEntra aquí: ${location.href}`;
+      navigator.clipboard.writeText(msg).then(()=>toast("Mensaje copiado."));
+    };
+  }
+
   wrap.querySelector("#add-participant").onclick = ()=>{
     const nameInput = wrap.querySelector("#new-name");
     const name = nameInput.value.trim();
     if(!name){ toast("Escribe el nombre del participante."); return; }
     const username = genUsername(name, USERS);
     const password = genPassword();
+    const addBtn = wrap.querySelector("#add-participant");
+    addBtn.disabled = true;
+    addBtn.textContent = "Guardando...";
     db.ref("users/"+username).set({ username, name, password, role:"player" }).then(()=>{
-      nameInput.value = "";
+      lastCreatedCred = { name, username, password };
+      toast("Participante creado.");
+      renderAdmin();
+    }).catch(err=>{
+      addBtn.disabled = false;
+      addBtn.textContent = "Generar credenciales";
       wrap.querySelector("#new-cred-box").innerHTML = `
-        <div class="panel" style="margin-top:14px;background:var(--surface-2);">
-          <div class="copy-line">
-            <span>Credenciales de <b>${name}</b>:</span>
-            <span class="cred">${username}</span> / <span class="cred">${password}</span>
-            <button class="btn btn-sm btn-ghost" id="copy-cred">Copiar mensaje</button>
-          </div>
+        <div class="panel" style="margin-top:14px;border-color:var(--red);">
+          <b style="color:var(--red);">No se pudo guardar el participante.</b>
+          <div class="breakdown" style="margin-top:8px;">Detalle: ${err.message}<br>
+          Revisa que reemplazaste el <b>firebaseConfig</b> con los datos reales de tu proyecto de Firebase,
+          y que las reglas de la Realtime Database permiten lectura y escritura (".read": true, ".write": true).</div>
         </div>
       `;
-      wrap.querySelector("#copy-cred").onclick = ()=>{
-        const msg = `¡Hola ${name}! Tus accesos para la quiniela del Mundial:\nUsuario: ${username}\nContraseña: ${password}\nEntra aquí: ${location.href}`;
-        navigator.clipboard.writeText(msg).then(()=>toast("Mensaje copiado."));
-      };
-      toast("Participante creado.");
+      toast("Error al guardar. Revisa la configuración de Firebase.");
     });
   };
 
@@ -949,6 +971,18 @@ function boot(){
     if(CURRENT_USER){
       if(CURRENT_USER.role==="admin" && adminTab==="matches") renderAdmin();
       if(CURRENT_USER.role==="player") renderPlayer();
+    }
+  });
+  db.ref("users").on("value", snap=>{
+    USERS = snap.val() || {};
+    if(CURRENT_USER && CURRENT_USER.role==="admin" && (adminTab==="participants" || adminTab==="leaderboard")){
+      renderAdmin();
+    }
+  });
+  db.ref("predictions").on("value", snap=>{
+    PREDICTIONS = snap.val() || {};
+    if(CURRENT_USER && CURRENT_USER.role==="admin" && adminTab==="leaderboard"){
+      renderAdmin();
     }
   });
 }

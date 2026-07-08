@@ -348,6 +348,49 @@ table.roster tr:last-child td{border-bottom:none;}
   .mc-info-item{flex:1 1 50%;border-bottom:1px solid var(--line);}
   .predict-row{gap:10px;}
 }
+
+/* ---------- Welcome screen ---------- */
+.welcome-wrap{
+  min-height:100vh;position:relative;display:flex;align-items:center;justify-content:center;
+  padding:40px 20px;
+  background-image:linear-gradient(rgba(6,10,20,0.55), rgba(6,10,20,0.88)), url('estadio-bienvenida.jpg');
+  background-size:cover;background-position:center;
+}
+.welcome-card{
+  max-width:560px;width:100%;background:rgba(19,28,46,0.88);
+  border:1px solid rgba(255,212,71,0.35);border-radius:16px;
+  padding:38px 34px 30px;backdrop-filter:blur(4px);
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.welcome-eyebrow{
+  text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:3px;
+  color:var(--gold);text-transform:uppercase;margin-bottom:10px;
+}
+.welcome-title{
+  text-align:center;font-family:var(--font-display);text-transform:uppercase;
+  font-size:clamp(24px,5vw,34px);line-height:1.15;margin:0 0 22px;letter-spacing:0.5px;
+}
+.welcome-title span{color:var(--gold);}
+.welcome-section{margin-bottom:20px;}
+.welcome-section h4{
+  font-family:var(--font-display);text-transform:uppercase;letter-spacing:1px;
+  font-size:13px;color:var(--muted);margin:0 0 10px;display:flex;align-items:center;gap:8px;
+}
+.welcome-rules .rule-row{font-size:13.5px;padding:8px 0;}
+.prize-box{
+  display:flex;align-items:center;gap:14px;background:rgba(255,212,71,0.08);
+  border:1px solid rgba(255,212,71,0.3);border-radius:10px;padding:14px 16px;
+}
+.prize-box .ico{font-size:26px;}
+.prize-box .txt b{display:block;color:var(--gold);font-size:15px;font-family:var(--font-display);letter-spacing:0.5px;}
+.prize-box .txt span{font-size:12.5px;color:var(--muted);}
+.welcome-start-btn{
+  width:100%;padding:14px;font-size:16px;margin-top:24px;
+}
+.welcome-footer{
+  text-align:center;font-size:12.5px;color:var(--muted);font-style:italic;margin-top:20px;
+  padding-top:16px;border-top:1px solid var(--line);
+}
 </style>
 </head>
 <body>
@@ -582,8 +625,48 @@ function doLogin(){
     }
     CURRENT_USER = { username:u, name:rec.name, role:rec.role||"player" };
     sessionStorage.setItem("quiniela_session", JSON.stringify(CURRENT_USER));
-    boot();
+    if(CURRENT_USER.role === "player"){
+      renderWelcome();
+    } else {
+      boot();
+    }
   });
+}
+
+function renderWelcome(){
+  root.innerHTML = `
+    <div class="welcome-wrap">
+      <div class="welcome-card">
+        <div class="welcome-eyebrow">Mundial 2026 · ${CURRENT_USER.name}</div>
+        <h1 class="welcome-title">Bienvenido a la <span>Quiniela de Cuartos de Final</span></h1>
+
+        <div class="welcome-section welcome-rules">
+          <h4>📋 Reglas de puntuación</h4>
+          <div class="rule-row"><span>Ganador o empate del partido</span><span class="pts">3 pts</span></div>
+          <div class="rule-row"><span>Goles de cada equipo acertados (c/u)</span><span class="pts">1 pt</span></div>
+          <div class="rule-row"><span>Marcador exacto</span><span class="pts">5 pts</span></div>
+          <div class="rule-row"><span>Marcador exacto 90' / tiempo extra / penales</span><span class="pts">1 pt c/u</span></div>
+          <div class="rule-row"><span>Orden exacto de penales por equipo</span><span class="pts">2 pts</span></div>
+        </div>
+
+        <div class="welcome-section">
+          <h4>🏆 Premio</h4>
+          <div class="prize-box">
+            <div class="ico">🍽️</div>
+            <div class="txt">
+              <b>Almuerzo ejecutivo de La Estancia</b>
+              <span>Para quien más puntos acumule al final de cuartos de final</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-gold welcome-start-btn" id="start-btn">Iniciar Pronóstico</button>
+
+        <div class="welcome-footer">⚽ Un buen pronóstico empieza por conocer bien a los equipos — ¡que gane el que más sabe de fútbol!</div>
+      </div>
+    </div>
+  `;
+  document.getElementById("start-btn").onclick = boot;
 }
 
 function logout(){
